@@ -1,0 +1,144 @@
+:root {
+  --pio-bg: #f7f5f2;
+  --pio-card: #ffffff;
+  --pio-border: #e4e0da;
+  --pio-text: #2a2722;
+  --pio-muted: #6b635b;
+  --pio-accent: #0b6a5e;
+}
+
+.pio-team {
+  display: grid;
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.pio-team--cols-1 {
+  grid-template-columns: 1fr;
+}
+
+.pio-team--cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pio-team--cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pio-team--cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pio-team--cols-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.pio-team--cols-6 {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.pio-team--list {
+  grid-template-columns: 1fr;
+}
+
+.pio-member {
+  display: flex;
+  gap: 1rem;
+  background: var(--pio-card);
+  border: 1px solid var(--pio-border);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+}
+
+.pio-team--cards .pio-member {
+  flex-direction: column;
+}
+
+.pio-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--pio-bg);
+  border: 2px solid var(--pio-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pio-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pio-avatar--placeholder span {
+  font-weight: 700;
+  color: var(--pio-accent);
+  letter-spacing: 0.08em;
+}
+
+.pio-member-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pio-member-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--pio-text);
+}
+
+.pio-member-roles {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--pio-muted);
+  font-size: 0.95rem;
+}
+
+.pio-member-cib,
+.pio-member-email {
+  font-size: 0.9rem;
+  color: var(--pio-muted);
+}
+
+.pio-member-email a {
+  color: var(--pio-accent);
+  text-decoration: none;
+}
+
+.pio-member-email a:hover {
+  text-decoration: underline;
+}
+
+.pio-team-error,
+.pio-team-empty {
+  padding: 1rem;
+  border-radius: 12px;
+  background: #fff4f4;
+  border: 1px solid #f1c9c9;
+  color: #8c2f2f;
+}
+
+@media (max-width: 900px) {
+  .pio-team--cols-3,
+  .pio-team--cols-4,
+  .pio-team--cols-5,
+  .pio-team--cols-6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .pio-team {
+    grid-template-columns: 1fr;
+  }
+}
