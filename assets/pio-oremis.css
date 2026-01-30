@@ -11,6 +11,7 @@
   display: grid;
   gap: 1.25rem;
   align-items: stretch;
+  margin-bottom: 2rem;
 }
 
 .pio-team--cols-1 {
