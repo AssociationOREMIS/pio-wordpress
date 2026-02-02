@@ -243,7 +243,11 @@ function pio_oremis_fetch_team_users($team_code, $force_refresh = false)
     }
 
     $base_url = untrailingslashit($settings['base_url']);
+    $scheme = strtolower((string) parse_url($base_url, PHP_URL_SCHEME));
     $host = parse_url($base_url, PHP_URL_HOST);
+    if ($scheme !== 'https') {
+        return new WP_Error('pio_oremis_invalid_scheme', 'Base URL must use HTTPS.');
+    }
     if (!$host || !pio_oremis_is_allowed_host($host)) {
         return new WP_Error('pio_oremis_invalid_host', 'Base URL host is not allowed.');
     }
@@ -296,6 +300,19 @@ function pio_oremis_member_initials($first_name, $last_name)
     return trim($first . $last);
 }
 
+function pio_oremis_upper_initial($value)
+{
+    if ($value === '') {
+        return '';
+    }
+
+    if (function_exists('mb_substr') && function_exists('mb_strtoupper')) {
+        return mb_strtoupper(mb_substr($value, 0, 1, 'UTF-8'));
+    }
+
+    return strtoupper(substr($value, 0, 1));
+}
+
 function pio_oremis_member_order($member)
 {
     $positions = isset($member['staff_positions']) && is_array($member['staff_positions']) ? $member['staff_positions'] : array();
@@ -334,7 +351,7 @@ function pio_oremis_shortcode_team($atts)
 
     $members = pio_oremis_fetch_team_users($team_code, $force_refresh);
     if (is_wp_error($members)) {
-        if ($atts['debug'] === '1' || current_user_can('manage_options')) {
+        if (current_user_can('manage_options')) {
             return '<div class="pio-team-error">' . esc_html($members->get_error_message()) . '</div>';
         }
         return '';
@@ -381,7 +398,7 @@ function pio_oremis_shortcode_team($atts)
     foreach ($members as $member) {
         $first_name = isset($member['first_name']) ? sanitize_text_field($member['first_name']) : '';
         $last_name = isset($member['last_name']) ? sanitize_text_field($member['last_name']) : '';
-        $email = isset($member['email']) ? sanitize_email($member['email']) : '';
+        $email = '';
         $cib = isset($member['cib']) ? sanitize_text_field($member['cib']) : '';
         $img_url = isset($member['profile_img_url']) ? esc_url_raw($member['profile_img_url']) : '';
         $positions = isset($member['staff_positions']) && is_array($member['staff_positions']) ? $member['staff_positions'] : array();
@@ -397,9 +414,22 @@ function pio_oremis_shortcode_team($atts)
                 }
                 return $order_a <=> $order_b;
             });
+
+            foreach ($positions as $pos) {
+                $position_code = isset($pos['code']) ? sanitize_text_field($pos['code']) : '';
+                if ($position_code !== '') {
+                    $email = sanitize_email(strtolower($position_code) . '@oremis.fr');
+                    break;
+                }
+            }
         }
 
-        $full_name = trim($first_name . ' ' . $last_name);
+        if ($email === '') {
+            $email = isset($member['email']) ? sanitize_email($member['email']) : '';
+        }
+
+        $last_initial = pio_oremis_upper_initial($last_name);
+        $full_name = trim($first_name . ' ' . ($last_initial !== '' ? $last_initial . '.' : ''));
         $initials = pio_oremis_member_initials($first_name, $last_name);
 
         $html .= '<div class="pio-member">';
@@ -427,7 +457,7 @@ function pio_oremis_shortcode_team($atts)
         }
 
         if ($atts['show_email'] === '1' && $email !== '') {
-            $html .= '<div class="pio-member-email"><a href="mailto:' . esc_attr($email) . '">' . esc_html($email) . '</a></div>';
+            $html .= '<div class="pio-member-email">Email : <a href="mailto:' . esc_attr($email) . '">' . esc_html($email) . '</a></div>';
         }
 
         $html .= '</div>';
