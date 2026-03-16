@@ -49,3 +49,5 @@ wp-config.php
 
 vendor/
 .vscode/
+
+.idea

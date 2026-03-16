@@ -19,6 +19,11 @@ if (!defined('PIO_OREMIS_API_TOKEN')) {
     define('PIO_OREMIS_API_TOKEN', '');
 }
 
+require_once PIO_OREMIS_PLUGIN_DIR . 'includes/roles.php';
+
+register_activation_hook(__FILE__, 'pio_oremis_register_roles_and_caps');
+add_action('init', 'pio_oremis_register_roles_and_caps');
+
 function pio_oremis_default_settings()
 {
     return array(
@@ -89,12 +94,16 @@ function pio_oremis_sanitize_settings($input)
 
 function pio_oremis_admin_menu()
 {
-    add_options_page(
+    $settings_capability = pio_oremis_settings_capability();
+
+    add_menu_page(
         'PIO OREMIS API',
         'PIO OREMIS',
-        'manage_options',
+        $settings_capability,
         'pio-oremis',
-        'pio_oremis_render_settings_page'
+        'pio_oremis_render_settings_page',
+        'dashicons-admin-generic',
+        58
     );
 }
 add_action('admin_menu', 'pio_oremis_admin_menu');
@@ -197,7 +206,7 @@ function pio_oremis_field_default_team_code()
 
 function pio_oremis_render_settings_page()
 {
-    if (!current_user_can('manage_options')) {
+    if (!current_user_can(pio_oremis_settings_capability())) {
         return;
     }
     echo '<div class="wrap">';
@@ -345,13 +354,13 @@ function pio_oremis_shortcode_team($atts)
 
     $team_code = sanitize_text_field($atts['code']);
     $force_refresh = false;
-    if (current_user_can('manage_options') && isset($_GET['pio_refresh']) && $_GET['pio_refresh'] === '1') {
+    if (current_user_can(pio_oremis_settings_capability()) && isset($_GET['pio_refresh']) && $_GET['pio_refresh'] === '1') {
         $force_refresh = true;
     }
 
     $members = pio_oremis_fetch_team_users($team_code, $force_refresh);
     if (is_wp_error($members)) {
-        if (current_user_can('manage_options')) {
+        if (current_user_can(pio_oremis_settings_capability())) {
             return '<div class="pio-team-error">' . esc_html($members->get_error_message()) . '</div>';
         }
         return '';
