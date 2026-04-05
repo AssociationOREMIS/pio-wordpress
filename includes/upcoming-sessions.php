@@ -264,7 +264,8 @@ function pio_oremis_render_upcoming_list_shortcode($atts, $shortcode_tag, $post_
         $current_page = max(1, absint(wp_unslash($_GET[$page_query_arg])));
     }
 
-    $today = wp_date('Y-m-d', current_time('timestamp'));
+    // Keep an item visible until D+1, then hide it from the public list.
+    $visible_from = wp_date('Y-m-d', current_time('timestamp') - DAY_IN_SECONDS);
 
     $upcoming_query = new WP_Query(array(
         'post_type' => $post_type,
@@ -280,7 +281,7 @@ function pio_oremis_render_upcoming_list_shortcode($atts, $shortcode_tag, $post_
         'meta_query' => array(
             array(
                 'key' => 'session_date',
-                'value' => $today,
+                'value' => $visible_from,
                 'compare' => '>=',
                 'type' => 'DATE',
             ),
