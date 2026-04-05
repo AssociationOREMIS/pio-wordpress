@@ -3,7 +3,7 @@
 /**
  * Plugin Name: PIO OREMIS API
  * Description: Display members from the PIO API (department teams) via shortcodes.
- * Version: 0.1.0
+ * Version: 0.3.0
  * Author: OREMIS
  * Text Domain: pio-oremis
  */
@@ -12,17 +12,24 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PIO_OREMIS_VERSION', '0.1.0');
+define('PIO_OREMIS_VERSION', '0.3.0');
 define('PIO_OREMIS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('PIO_OREMIS_PLUGIN_URL', plugin_dir_url(__FILE__));
 if (!defined('PIO_OREMIS_API_TOKEN')) {
     define('PIO_OREMIS_API_TOKEN', '');
 }
 
-require_once PIO_OREMIS_PLUGIN_DIR . 'includes/roles.php';
+require_once PIO_OREMIS_PLUGIN_DIR . 'includes/pv-ca.php';
 
-register_activation_hook(__FILE__, 'pio_oremis_register_roles_and_caps');
-add_action('init', 'pio_oremis_register_roles_and_caps');
+function pio_oremis_settings_capability()
+{
+    return 'manage_options';
+}
+
+function pio_oremis_pv_capability()
+{
+    return 'upload_files';
+}
 
 function pio_oremis_default_settings()
 {
@@ -94,19 +101,48 @@ function pio_oremis_sanitize_settings($input)
 
 function pio_oremis_admin_menu()
 {
+    $pv_capability = pio_oremis_pv_capability();
     $settings_capability = pio_oremis_settings_capability();
 
     add_menu_page(
-        'PIO OREMIS API',
-        'PIO OREMIS',
-        $settings_capability,
+        'OREMIS',
+        'OREMIS',
+        $pv_capability,
         'pio-oremis',
-        'pio_oremis_render_settings_page',
+        'pio_oremis_render_admin_landing_page',
         'dashicons-admin-generic',
         58
     );
+
+    add_submenu_page(
+        'pio-oremis',
+        'Config PIO',
+        'Config PIO',
+        $settings_capability,
+        'pio-oremis-settings',
+        'pio_oremis_render_settings_page'
+    );
 }
 add_action('admin_menu', 'pio_oremis_admin_menu');
+
+function pio_oremis_cleanup_admin_submenu()
+{
+    remove_submenu_page('pio-oremis', 'pio-oremis');
+}
+add_action('admin_menu', 'pio_oremis_cleanup_admin_submenu', 99);
+
+function pio_oremis_render_admin_landing_page()
+{
+    if (current_user_can(pio_oremis_settings_capability())) {
+        pio_oremis_render_settings_page();
+        return;
+    }
+
+    if (current_user_can(pio_oremis_pv_capability())) {
+        wp_safe_redirect(admin_url('edit.php?post_type=pv_ca'));
+        exit;
+    }
+}
 
 function pio_oremis_admin_init()
 {
@@ -210,7 +246,7 @@ function pio_oremis_render_settings_page()
         return;
     }
     echo '<div class="wrap">';
-    echo '<h1>PIO OREMIS API</h1>';
+    echo '<h1>Config PIO</h1>';
     echo '<form method="post" action="options.php">';
     settings_fields('pio_oremis_options');
     do_settings_sections('pio-oremis');
