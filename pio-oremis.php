@@ -3,7 +3,7 @@
 /**
  * Plugin Name: PIO OREMIS API
  * Description: Display members from the PIO API (department teams) via shortcodes.
- * Version: 0.3.0
+ * Version: 0.4.0
  * Author: OREMIS
  * Text Domain: pio-oremis
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PIO_OREMIS_VERSION', '0.3.0');
+define('PIO_OREMIS_VERSION', '0.4.0');
 define('PIO_OREMIS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('PIO_OREMIS_PLUGIN_URL', plugin_dir_url(__FILE__));
 if (!defined('PIO_OREMIS_API_TOKEN')) {
@@ -20,6 +20,7 @@ if (!defined('PIO_OREMIS_API_TOKEN')) {
 }
 
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/pv-ca.php';
+require_once PIO_OREMIS_PLUGIN_DIR . 'includes/upcoming-sessions.php';
 
 function pio_oremis_settings_capability()
 {
