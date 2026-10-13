@@ -1,0 +1,39 @@
+name: Release zip
+
+# Publishing a release (e.g. v0.5.1) attaches pio-oremis.zip to it.
+# WordPress sites then offer the update in Dashboard > Updates (see includes/updater.php).
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Check the tag matches the plugin version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          header=$(sed -n 's/^ \* Version: *//p' pio-oremis.php | tr -d '\r')
+          constant=$(sed -n "s/^define('PIO_OREMIS_VERSION', '\(.*\)');/\1/p" pio-oremis.php | tr -d '\r')
+          echo "tag=${TAG#v} header=$header constant=$constant"
+          if [ "${TAG#v}" != "$header" ] || [ "$header" != "$constant" ]; then
+            echo "::error::Tag ${TAG}, 'Version:' header ($header) and PIO_OREMIS_VERSION ($constant) must match."
+            exit 1
+          fi
+
+      - name: Build pio-oremis.zip
+        run: git archive --format=zip --prefix=pio-oremis/ -o pio-oremis.zip HEAD
+
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" pio-oremis.zip --clobber

@@ -279,14 +279,43 @@ function pio_oremis_format_session_date($session_date)
     return wp_date('j F Y', $date->getTimestamp(), $timezone);
 }
 
+/**
+ * Heading tag for list items, from the heading_level shortcode attribute (h2 to h6, h3 by default).
+ */
+function pio_oremis_list_heading_tag($heading_level)
+{
+    $level = intval(preg_replace('/\D/', '', (string) $heading_level));
+    return 'h' . ($level >= 2 && $level <= 6 ? $level : 3);
+}
+
+/**
+ * Number of items per page from the posts_per_page shortcode attribute, between 1 and 100.
+ */
+function pio_oremis_list_posts_per_page($posts_per_page)
+{
+    return max(1, min(100, intval($posts_per_page)));
+}
+
+/**
+ * Download link opening a new tab, announced to screen readers.
+ */
+function pio_oremis_list_download_link($url, $label)
+{
+    return '<a class="pio-pv-ca-button" href="' . esc_url($url) . '" target="_blank" rel="noopener">'
+        . esc_html($label)
+        . '<span class="pio-sr-only"> (s’ouvre dans un nouvel onglet)</span></a>';
+}
+
 function pio_oremis_render_pv_list_shortcode($atts, $shortcode_tag, $post_type, $page_query_arg, $empty_message, $default_title, $pagination_label)
 {
     $atts = shortcode_atts(array(
         'posts_per_page' => '10',
         'show_pagination' => '1',
+        'heading_level' => '3',
     ), $atts, $shortcode_tag);
 
-    $posts_per_page = max(1, intval($atts['posts_per_page']));
+    $posts_per_page = pio_oremis_list_posts_per_page($atts['posts_per_page']);
+    $heading_tag = pio_oremis_list_heading_tag($atts['heading_level']);
     $show_pagination = in_array(strtolower((string) $atts['show_pagination']), array('1', 'true', 'yes'), true);
 
     $current_page = 1;
@@ -299,12 +328,23 @@ function pio_oremis_render_pv_list_shortcode($atts, $shortcode_tag, $post_type, 
         'post_status' => 'publish',
         'posts_per_page' => $posts_per_page,
         'paged' => $current_page,
-        'meta_key' => 'session_date',
+        // Sessions without a date stay listed, after the dated ones.
+        'meta_query' => array(
+            'relation' => 'OR',
+            'session_date_clause' => array(
+                'key' => 'session_date',
+                'compare' => 'EXISTS',
+                'type' => 'DATE',
+            ),
+            array(
+                'key' => 'session_date',
+                'compare' => 'NOT EXISTS',
+            ),
+        ),
         'orderby' => array(
-            'meta_value' => 'DESC',
+            'session_date_clause' => 'DESC',
             'date' => 'DESC',
         ),
-        'meta_type' => 'DATE',
         'ignore_sticky_posts' => true,
         'no_found_rows' => !$show_pagination,
     ));
@@ -335,18 +375,18 @@ function pio_oremis_render_pv_list_shortcode($atts, $shortcode_tag, $post_type, 
         $deliberations_file_url = esc_url(get_post_meta($post_id, 'deliberations_file_url', true));
 
         $output .= '<article class="pio-pv-ca-item">';
-        $output .= '<h3 class="pio-pv-ca-heading">';
+        $output .= '<' . $heading_tag . ' class="pio-pv-ca-heading">';
         $output .= '<span class="pio-pv-ca-date">' . esc_html($session_date) . '</span>';
         $output .= '<span class="pio-pv-ca-title">' . esc_html($title) . '</span>';
-        $output .= '</h3>';
+        $output .= '</' . $heading_tag . '>';
 
         if ($pv_file_url !== '' || $deliberations_file_url !== '') {
             $output .= '<div class="pio-pv-ca-actions">';
             if ($pv_file_url !== '') {
-                $output .= '<a class="pio-pv-ca-button" href="' . esc_url($pv_file_url) . '" target="_blank" rel="noopener">Télécharger le PV</a>';
+                $output .= pio_oremis_list_download_link($pv_file_url, 'Télécharger le PV');
             }
             if ($deliberations_file_url !== '') {
-                $output .= '<a class="pio-pv-ca-button" href="' . esc_url($deliberations_file_url) . '" target="_blank" rel="noopener">Télécharger la liste des délibérations examinées</a>';
+                $output .= pio_oremis_list_download_link($deliberations_file_url, 'Télécharger la liste des délibérations examinées');
             }
             $output .= '</div>';
         }
