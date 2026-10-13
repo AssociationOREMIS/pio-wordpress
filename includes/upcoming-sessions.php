@@ -254,9 +254,11 @@ function pio_oremis_render_upcoming_list_shortcode($atts, $shortcode_tag, $post_
     $atts = shortcode_atts(array(
         'posts_per_page' => '10',
         'show_pagination' => '1',
+        'heading_level' => '3',
     ), $atts, $shortcode_tag);
 
-    $posts_per_page = max(1, intval($atts['posts_per_page']));
+    $posts_per_page = pio_oremis_list_posts_per_page($atts['posts_per_page']);
+    $heading_tag = pio_oremis_list_heading_tag($atts['heading_level']);
     $show_pagination = in_array(strtolower((string) $atts['show_pagination']), array('1', 'true', 'yes'), true);
 
     $current_page = 1;
@@ -265,7 +267,8 @@ function pio_oremis_render_upcoming_list_shortcode($atts, $shortcode_tag, $post_
     }
 
     // Keep an item visible until D+1, then hide it from the public list.
-    $visible_from = wp_date('Y-m-d', current_time('timestamp') - DAY_IN_SECONDS);
+    // wp_date() applies the site timezone itself, so it needs a real UTC timestamp.
+    $visible_from = wp_date('Y-m-d', time() - DAY_IN_SECONDS);
 
     $upcoming_query = new WP_Query(array(
         'post_type' => $post_type,
@@ -302,11 +305,7 @@ function pio_oremis_render_upcoming_list_shortcode($atts, $shortcode_tag, $post_
         $upcoming_query->the_post();
         $post_id = get_the_ID();
 
-        if (function_exists('pio_oremis_format_session_date')) {
-            $session_date = pio_oremis_format_session_date(get_post_meta($post_id, 'session_date', true));
-        } else {
-            $session_date = get_post_meta($post_id, 'session_date', true);
-        }
+        $session_date = pio_oremis_format_session_date(get_post_meta($post_id, 'session_date', true));
         if ($session_date === '') {
             $session_date = 'Date non renseignée';
         }
@@ -319,14 +318,14 @@ function pio_oremis_render_upcoming_list_shortcode($atts, $shortcode_tag, $post_
         $agenda_file_url = esc_url(get_post_meta($post_id, 'agenda_file_url', true));
 
         $output .= '<article class="pio-pv-ca-item">';
-        $output .= '<h3 class="pio-pv-ca-heading">';
+        $output .= '<' . $heading_tag . ' class="pio-pv-ca-heading">';
         $output .= '<span class="pio-pv-ca-date">' . esc_html($session_date) . '</span>';
         $output .= '<span class="pio-pv-ca-title">' . esc_html($title) . '</span>';
-        $output .= '</h3>';
+        $output .= '</' . $heading_tag . '>';
 
         if ($agenda_file_url !== '') {
             $output .= '<div class="pio-pv-ca-actions">';
-            $output .= '<a class="pio-pv-ca-button" href="' . esc_url($agenda_file_url) . '" target="_blank" rel="noopener">Télécharger l’ordre du jour</a>';
+            $output .= pio_oremis_list_download_link($agenda_file_url, 'Télécharger l’ordre du jour');
             $output .= '</div>';
         }
 

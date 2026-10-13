@@ -211,7 +211,8 @@
 .pio-pv-ca-button {
   display: block;
   text-decoration: none;
-  color: #a8872f;
+  /* #8f7228 on white is 4.56:1, the WCAG AA minimum for body text. */
+  color: #8f7228;
   background: #fff;
   border-top: 1px solid #dcdcdc;
   padding: 0.75rem 0.9rem;
@@ -227,7 +228,12 @@
 .pio-pv-ca-button:hover,
 .pio-pv-ca-button:focus {
   background: #fafafa;
-  color: #8f7228;
+  color: #6e5718;
+}
+
+.pio-pv-ca-button:focus-visible {
+  outline: 3px solid #6e5718;
+  outline-offset: -3px;
 }
 
 .pio-pv-ca-pagination .page-numbers {
@@ -261,4 +267,16 @@
   border-radius: 10px;
   color: var(--pio-muted);
   background: #fff;
+}
+
+.pio-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

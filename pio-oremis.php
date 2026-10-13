@@ -2,8 +2,8 @@
 
 /**
  * Plugin Name: PIO OREMIS API
- * Description: Display members from the PIO API (department teams) via shortcodes.
- * Version: 0.4.0
+ * Description: OREMIS site tools: PIO team members, CA/AG minutes and upcoming sessions, via shortcodes.
+ * Version: 0.4.1
  * Author: OREMIS
  * Text Domain: pio-oremis
  */
@@ -12,9 +12,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PIO_OREMIS_VERSION', '0.4.0');
+define('PIO_OREMIS_VERSION', '0.4.1');
 define('PIO_OREMIS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('PIO_OREMIS_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('PIO_OREMIS_ERROR_CACHE_TTL', 120);
 if (!defined('PIO_OREMIS_API_TOKEN')) {
     define('PIO_OREMIS_API_TOKEN', '');
 }
@@ -91,8 +92,15 @@ function pio_oremis_sanitize_settings($input)
     $output['base_url'] = isset($input['base_url']) ? esc_url_raw(trim($input['base_url'])) : $defaults['base_url'];
     if (defined('PIO_OREMIS_API_TOKEN') && PIO_OREMIS_API_TOKEN !== '') {
         $output['api_token'] = '';
+    } elseif (!empty($input['api_token_clear'])) {
+        $output['api_token'] = '';
     } else {
+        // The token is never sent back to the browser, so an empty field keeps the stored one.
         $output['api_token'] = isset($input['api_token']) ? sanitize_text_field($input['api_token']) : '';
+        if ($output['api_token'] === '') {
+            $previous = get_option('pio_oremis_settings', array());
+            $output['api_token'] = is_array($previous) && isset($previous['api_token']) ? $previous['api_token'] : '';
+        }
     }
     $output['cache_ttl'] = isset($input['cache_ttl']) ? max(0, intval($input['cache_ttl'])) : $defaults['cache_ttl'];
     $output['default_team_code'] = isset($input['default_team_code']) ? sanitize_text_field($input['default_team_code']) : '';
@@ -205,17 +213,20 @@ function pio_oremis_field_base_url()
 function pio_oremis_field_api_token()
 {
     $settings = pio_oremis_get_settings();
-    $disabled = '';
     if (defined('PIO_OREMIS_API_TOKEN') && PIO_OREMIS_API_TOKEN !== '') {
-        $disabled = 'disabled';
-    }
-    printf(
-        '<input type="password" class="regular-text" name="pio_oremis_settings[api_token]" value="%s" autocomplete="off" %s />',
-        esc_attr($settings['api_token']),
-        esc_attr($disabled)
-    );
-    if ($disabled !== '') {
+        echo '<input type="password" class="regular-text" value="" placeholder="••••••••" autocomplete="off" disabled />';
         echo '<p class="description">Token set via wp-config.php (PIO_OREMIS_API_TOKEN).</p>';
+        return;
+    }
+
+    $has_token = $settings['api_token'] !== '';
+    printf(
+        '<input type="password" class="regular-text" name="pio_oremis_settings[api_token]" value="" placeholder="%s" autocomplete="new-password" />',
+        esc_attr($has_token ? '••••••••' : '')
+    );
+    if ($has_token) {
+        echo '<p class="description">A token is saved. Leave empty to keep it, or type a new one to replace it.</p>';
+        echo '<p><label><input type="checkbox" name="pio_oremis_settings[api_token_clear]" value="1" /> Remove the saved token</label></p>';
     } else {
         echo '<p class="description">Leave empty if the endpoint is public.</p>';
     }
@@ -279,15 +290,55 @@ function pio_oremis_fetch_team_users($team_code, $force_refresh = false)
     }
 
     $cache_ttl = intval($settings['cache_ttl']);
-    $cache_key = 'pio_oremis_team_' . md5(strtolower($team_code));
+    $hash = md5(strtolower($team_code));
+    $cache_key = 'pio_oremis_team_' . $hash;
+    $error_key = 'pio_oremis_team_error_' . $hash;
+    $stale_key = 'pio_oremis_team_stale_' . $hash;
 
     if (!$force_refresh && $cache_ttl > 0) {
         $cached = get_transient($cache_key);
         if (is_array($cached)) {
             return $cached;
         }
+
+        // The API failed a moment ago: do not make every visitor wait for the timeout again.
+        if (get_transient($error_key) !== false) {
+            $stale = get_option($stale_key);
+            return is_array($stale) ? $stale : pio_oremis_last_team_error($team_code);
+        }
     }
 
+    $members = pio_oremis_request_team_users($team_code, $settings);
+
+    if (is_wp_error($members)) {
+        set_transient($error_key, $members->get_error_message(), PIO_OREMIS_ERROR_CACHE_TTL);
+        $stale = get_option($stale_key);
+        return is_array($stale) ? $stale : $members;
+    }
+
+    delete_transient($error_key);
+    update_option($stale_key, $members, false);
+    if ($cache_ttl > 0) {
+        set_transient($cache_key, $members, $cache_ttl);
+    }
+
+    return $members;
+}
+
+/**
+ * Message of the last API failure for this team, or false when the last call succeeded.
+ */
+function pio_oremis_last_team_error($team_code)
+{
+    $message = get_transient('pio_oremis_team_error_' . md5(strtolower(trim($team_code))));
+    if ($message === false) {
+        return false;
+    }
+    return new WP_Error('pio_oremis_api_unavailable', (string) $message);
+}
+
+function pio_oremis_request_team_users($team_code, $settings)
+{
     $base_url = untrailingslashit($settings['base_url']);
     $scheme = strtolower((string) parse_url($base_url, PHP_URL_SCHEME));
     $host = parse_url($base_url, PHP_URL_HOST);
@@ -325,10 +376,6 @@ function pio_oremis_fetch_team_users($team_code, $force_refresh = false)
     $data = json_decode($body, true);
     if (!is_array($data) || !isset($data['data']) || !is_array($data['data'])) {
         return new WP_Error('pio_oremis_invalid_response', 'Invalid API response.');
-    }
-
-    if ($cache_ttl > 0) {
-        set_transient($cache_key, $data['data'], $cache_ttl);
     }
 
     return $data['data'];
@@ -404,7 +451,15 @@ function pio_oremis_shortcode_team($atts)
     }
 
     if (!is_array($members) || count($members) === 0) {
-        return '<div class="pio-team-empty">No members found.</div>';
+        return '<div class="pio-team-empty">Aucun membre à afficher pour le moment.</div>';
+    }
+
+    $admin_notice = '';
+    if (current_user_can(pio_oremis_settings_capability())) {
+        $last_error = pio_oremis_last_team_error($team_code);
+        if (is_wp_error($last_error)) {
+            $admin_notice = '<div class="pio-team-error">Last known members shown (visible to admins only). API error: ' . esc_html($last_error->get_error_message()) . '</div>';
+        }
     }
 
     usort($members, function ($a, $b) {
@@ -439,7 +494,7 @@ function pio_oremis_shortcode_team($atts)
         $wrapper_classes[] = $extra_class;
     }
 
-    $html = '<div class="' . esc_attr(implode(' ', $wrapper_classes)) . '">';
+    $html = $admin_notice . '<div class="' . esc_attr(implode(' ', $wrapper_classes)) . '">';
 
     foreach ($members as $member) {
         $first_name = isset($member['first_name']) ? sanitize_text_field($member['first_name']) : '';
@@ -480,9 +535,10 @@ function pio_oremis_shortcode_team($atts)
 
         $html .= '<div class="pio-member">';
         if ($img_url) {
-            $html .= '<div class="pio-avatar"><img src="' . esc_url($img_url) . '" alt="' . esc_attr($full_name) . '" loading="lazy" decoding="async" referrerpolicy="no-referrer" /></div>';
+            // Decorative: the name is written right below, screen readers would read it twice.
+            $html .= '<div class="pio-avatar"><img src="' . esc_url($img_url) . '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" /></div>';
         } else {
-            $html .= '<div class="pio-avatar pio-avatar--placeholder"><span>' . esc_html($initials) . '</span></div>';
+            $html .= '<div class="pio-avatar pio-avatar--placeholder" aria-hidden="true"><span>' . esc_html($initials) . '</span></div>';
         }
         $html .= '<div class="pio-member-body">';
         $html .= '<div class="pio-member-name">' . esc_html($full_name) . '</div>';
