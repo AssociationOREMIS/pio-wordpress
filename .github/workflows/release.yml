@@ -1,39 +1,60 @@
-name: Release zip
+name: Release
 
-# Publishing a release (e.g. v0.5.1) attaches pio-oremis.zip to it.
+# Every push to main whose plugin version has no release yet publishes one:
+# tag v<version>, GitHub release with generated notes, and pio-oremis.zip attached.
 # WordPress sites then offer the update in Dashboard > Updates (see includes/updater.php).
+# A push that does not bump the version publishes nothing.
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  zip:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.release.tag_name }}
 
-      - name: Check the tag matches the plugin version
-        env:
-          TAG: ${{ github.event.release.tag_name }}
+      - name: Read the plugin version
+        id: version
         run: |
           header=$(sed -n 's/^ \* Version: *//p' pio-oremis.php | tr -d '\r')
           constant=$(sed -n "s/^define('PIO_OREMIS_VERSION', '\(.*\)');/\1/p" pio-oremis.php | tr -d '\r')
-          echo "tag=${TAG#v} header=$header constant=$constant"
-          if [ "${TAG#v}" != "$header" ] || [ "$header" != "$constant" ]; then
-            echo "::error::Tag ${TAG}, 'Version:' header ($header) and PIO_OREMIS_VERSION ($constant) must match."
+          if [ -z "$header" ] || [ "$header" != "$constant" ]; then
+            echo "::error::'Version:' header ($header) and PIO_OREMIS_VERSION ($constant) must match."
             exit 1
           fi
+          echo "tag=v$header" >> "$GITHUB_OUTPUT"
 
-      - name: Build pio-oremis.zip
-        run: git archive --format=zip --prefix=pio-oremis/ -o pio-oremis.zip HEAD
-
-      - name: Attach it to the release
+      - name: Skip if this version is already released
+        id: exists
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$TAG" pio-oremis.zip --clobber
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "$TAG already exists: nothing to publish (bump the version to release)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check PHP syntax
+        if: steps.exists.outputs.skip != 'true'
+        run: find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
+
+      - name: Build pio-oremis.zip
+        if: steps.exists.outputs.skip != 'true'
+        run: git archive --format=zip --prefix=pio-oremis/ -o pio-oremis.zip HEAD
+
+      - name: Publish the release
+        if: steps.exists.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: gh release create "$TAG" pio-oremis.zip --target "$GITHUB_SHA" --title "$TAG" --generate-notes
