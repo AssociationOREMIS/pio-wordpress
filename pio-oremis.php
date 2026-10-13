@@ -5,6 +5,9 @@
  * Description: OREMIS site tools: PIO team members, CA/AG minutes and upcoming sessions, login with the OREMIS SSO or Google.
  * Version: 0.5.0
  * Author: OREMIS
+ * Update URI: https://github.com/AssociationOREMIS/pio-wordpress
+ * Requires at least: 5.8
+ * Requires PHP: 7.4
  * Text Domain: pio-oremis
  */
 
@@ -13,6 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 define('PIO_OREMIS_VERSION', '0.5.0');
+define('PIO_OREMIS_PLUGIN_FILE', __FILE__);
 define('PIO_OREMIS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('PIO_OREMIS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('PIO_OREMIS_ERROR_CACHE_TTL', 120);
@@ -23,6 +27,7 @@ if (!defined('PIO_OREMIS_API_TOKEN')) {
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/pv-ca.php';
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/upcoming-sessions.php';
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/login.php';
+require_once PIO_OREMIS_PLUGIN_DIR . 'includes/updater.php';
 
 function pio_oremis_settings_capability()
 {

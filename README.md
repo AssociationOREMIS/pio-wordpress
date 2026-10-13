@@ -7,8 +7,8 @@ Tools for the OREMIS website:
 - `[upcoming_ca_list]` / `[upcoming_ag_list]`: upcoming CA and AG meetings with their agenda.
 
 ## Install
-1. Copy this folder to `wp-content/plugins/pio-oremis`.
-2. Activate **PIO OREMIS API** in WordPress.
+1. Download `pio-oremis.zip` from the [latest release](https://github.com/AssociationOREMIS/pio-wordpress/releases/latest).
+2. In WordPress, **Plugins > Add New > Upload Plugin**, then activate **PIO OREMIS API**.
 3. Go to **OREMIS > Config PIO** (administrators only) and set the API base URL and token if needed.
    The token can also be set in `wp-config.php` with `define('PIO_OREMIS_API_TOKEN', '...');`.
    A saved token is never shown again: leave the field empty to keep it.
@@ -65,3 +65,12 @@ Settings in **OREMIS > Connexion** (administrators only). Accounts are never cre
   same options, same redirect URI, so it can be deactivated with nothing to reconfigure. While it is still active, it keeps handling Google login.
 
 Deploy order: this plugin first, then the sync (it starts writing CIBs once the meta exists), then tick "Enable" for the SSO.
+
+## Updates
+From 0.5.0 on, new versions show up in **Dashboard > Updates** like any other plugin (checked every 12 hours, or with "Check again").
+
+To publish one:
+1. Bump the version in `pio-oremis.php`, both in the `Version:` header and in `PIO_OREMIS_VERSION`, and merge to `main`.
+2. Create a GitHub release with the tag `v<version>` (e.g. `v0.5.1`).
+3. The "Release zip" workflow checks that the tag matches the version and attaches `pio-oremis.zip` to the release.
+   Sites only see the update once that zip is there.
