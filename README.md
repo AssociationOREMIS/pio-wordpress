@@ -66,11 +66,19 @@ Settings in **OREMIS > Connexion** (administrators only). Accounts are never cre
 
 Deploy order: this plugin first, then the sync (it starts writing CIBs once the meta exists), then tick "Enable" for the SSO.
 
+## OREMIS Chat
+Settings in **OREMIS > Chat** (administrators only): shows the OREMIS Chat bubble on every page, loaded from `<chat address>/embed.js`.
+
+- **Display**: off, administrators only (to try it on the real site before the launch), or everyone.
+- **Hide on these pages**: page slugs, one per line.
+- `[oremis_chat_link text="Parler à un bénévole"]`: a link to the full chat page, shown only when the bubble is.
+
+The chat only works on the sites listed in its `CORS_ORIGINS` (`https://oremis.fr,https://www.oremis.fr`): elsewhere, the browser refuses to show it.
+
 ## Updates
 From 0.5.0 on, new versions show up in **Dashboard > Updates** like any other plugin (checked every 12 hours, or with "Check again").
 
-To publish one:
-1. Bump the version in `pio-oremis.php`, both in the `Version:` header and in `PIO_OREMIS_VERSION`, and merge to `main`.
-2. Create a GitHub release with the tag `v<version>` (e.g. `v0.5.1`).
-3. The "Release zip" workflow checks that the tag matches the version and attaches `pio-oremis.zip` to the release.
-   Sites only see the update once that zip is there.
+To publish one, bump the version in `pio-oremis.php` (both the `Version:` header and `PIO_OREMIS_VERSION`) in the pull request.
+Once it is merged into `main`, the "Release" workflow checks the PHP syntax, then creates the `v<version>` tag, the GitHub release
+(with generated notes) and its `pio-oremis.zip`. Sites pick the update up within 12 hours.
+A merge that does not bump the version publishes nothing.

@@ -2,8 +2,8 @@
 
 /**
  * Plugin Name: PIO OREMIS API
- * Description: OREMIS site tools: PIO team members, CA/AG minutes and upcoming sessions, login with the OREMIS SSO or Google.
- * Version: 0.5.0
+ * Description: OREMIS site tools: PIO team members, CA/AG minutes and upcoming sessions, login with the OREMIS SSO or Google, OREMIS Chat bubble.
+ * Version: 0.6.0
  * Author: OREMIS
  * Update URI: https://github.com/AssociationOREMIS/pio-wordpress
  * Requires at least: 5.8
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PIO_OREMIS_VERSION', '0.5.0');
+define('PIO_OREMIS_VERSION', '0.6.0');
 define('PIO_OREMIS_PLUGIN_FILE', __FILE__);
 define('PIO_OREMIS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('PIO_OREMIS_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -27,6 +27,7 @@ if (!defined('PIO_OREMIS_API_TOKEN')) {
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/pv-ca.php';
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/upcoming-sessions.php';
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/login.php';
+require_once PIO_OREMIS_PLUGIN_DIR . 'includes/chat.php';
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/updater.php';
 
 function pio_oremis_settings_capability()
