@@ -103,3 +103,9 @@ Vous avez trouvé une faille ? Écrivez-nous à [contact@oremis.fr](mailto:conta
 Les suggestions et les pull requests sont les bienvenues.
 
 Pour publier une version, augmentez le numéro de version dans `pio-oremis.php` (l'en-tête `Version:` et la constante `PIO_OREMIS_VERSION`) dans la pull request. Une fois celle-ci fusionnée dans `main`, la publication est automatique : vérification de la syntaxe PHP, tag `v<version>`, version GitHub avec ses notes et son fichier `pio-oremis.zip`. Sans changement de numéro, rien n'est publié.
+
+## Licence
+
+Extension libre, distribuée sous licence [GNU GPL version 2 ou ultérieure](LICENSE) (GPL-2.0-or-later), comme WordPress. Vous pouvez la réutiliser, la modifier et la redistribuer, à condition de conserver cette licence.
+
+© Association OREMIS
