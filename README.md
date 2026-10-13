@@ -54,3 +54,14 @@ Entries are managed under the **OREMIS** admin menu (users who can upload files)
 
 Minutes are sorted by meeting date, newest first. Minutes without a date are listed last.
 An upcoming meeting stays visible until the end of the day after it.
+
+## Login (OREMIS SSO and Google)
+Settings in **OREMIS > Connexion** (administrators only). Accounts are never created or given a role here: the Data sync does that.
+
+- **OREMIS SSO** (sso.oremis.fr): the account is found by its CIB, stored by the Data sync in the `oremis_cib` user meta
+  (shown read-only on the user profile). Register a confidential client in Data (Clients SSO) with the redirect URI shown on the settings page.
+  The client secret can be set in `wp-config.php` with `define('PIO_OREMIS_SSO_CLIENT_SECRET', '...');`.
+- **Google**: only verified `@oremis.fr` accounts, matched by email. This replaces the former "Google OAuth Login Standalone" plugin:
+  same options, same redirect URI, so it can be deactivated with nothing to reconfigure. While it is still active, it keeps handling Google login.
+
+Deploy order: this plugin first, then the sync (it starts writing CIBs once the meta exists), then tick "Enable" for the SSO.
