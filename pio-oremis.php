@@ -2,8 +2,8 @@
 
 /**
  * Plugin Name: PIO OREMIS API
- * Description: OREMIS site tools: PIO team members, CA/AG minutes and upcoming sessions, login with the OREMIS SSO or Google, OREMIS Chat bubble.
- * Version: 0.6.1
+ * Description: OREMIS site tools: PIO team members, volunteer missions, CA/AG minutes and upcoming sessions, login with the OREMIS SSO or Google, OREMIS Chat bubble.
+ * Version: 0.7.0
  * Author: OREMIS
  * Update URI: https://github.com/AssociationOREMIS/pio-wordpress
  * Requires at least: 5.8
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PIO_OREMIS_VERSION', '0.6.1');
+define('PIO_OREMIS_VERSION', '0.7.0');
 define('PIO_OREMIS_PLUGIN_FILE', __FILE__);
 define('PIO_OREMIS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('PIO_OREMIS_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -27,6 +27,7 @@ if (!defined('PIO_OREMIS_API_TOKEN')) {
 }
 
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/pv-ca.php';
+require_once PIO_OREMIS_PLUGIN_DIR . 'includes/missions.php';
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/upcoming-sessions.php';
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/login.php';
 require_once PIO_OREMIS_PLUGIN_DIR . 'includes/chat.php';
@@ -276,6 +277,7 @@ function pio_oremis_render_settings_page()
     echo '<hr />';
     echo '<h2>Shortcode</h2>';
     echo '<p>Use <code>[pio_team code="CA-OFFICIER"]</code> to display members.</p>';
+    echo '<p>Use <code>[pio_missions]</code> to display the volunteer missions, and <code>[pio_mission id="12"]</code> for one mission in full. The token then needs <code>pio.missions:index</code> (and <code>pio.missions:view</code> for one mission) in DATA.</p>';
     echo '</div>';
 }
 
