@@ -145,17 +145,23 @@ function pio_oremis_mission_image($mission, $lazy = true)
 }
 
 /**
- * [pio_missions]: the published missions as cards.
+ * [pio_missions]: the published missions as cards, sorted by department
+ * and team (group="0" for one plain grid).
  */
 function pio_oremis_shortcode_missions($atts)
 {
     $atts = shortcode_atts(array(
-        'limit' => '12',
+        // Every open mission by default, so no department is cut off.
+        'limit' => '100',
         'format' => '',
         'search' => '',
         'columns' => '3',
         'show_image' => '1',
         'heading_level' => '3',
+        'group' => '1',
+        'group_heading_level' => '2',
+        'department' => '',
+        'team' => '',
         'detail_page' => '',
         'class' => '',
     ), $atts, 'pio_missions');
@@ -167,6 +173,12 @@ function pio_oremis_shortcode_missions($atts)
     $search = sanitize_text_field($atts['search']);
     if ($search !== '') {
         $query['search'] = $search;
+    }
+    foreach (array('department', 'team') as $structure) {
+        $code = sanitize_text_field($atts[$structure]);
+        if ($code !== '') {
+            $query[$structure] = $code;
+        }
     }
 
     $is_admin = current_user_can(pio_oremis_settings_capability());
@@ -195,48 +207,134 @@ function pio_oremis_shortcode_missions($atts)
     wp_enqueue_style('pio-oremis');
 
     $columns = max(1, min(4, intval($atts['columns'])));
-    $heading = 'h' . max(2, min(6, intval($atts['heading_level'])));
-    $show_image = $atts['show_image'] !== '0';
     // A page of the site holding [pio_mission]: each card links there with ?mission=ID.
-    $detail_page = esc_url_raw($atts['detail_page']);
+    $card_options = array(
+        'show_image' => $atts['show_image'] !== '0',
+        'detail_page' => esc_url_raw($atts['detail_page']),
+    );
     $classes = array('pio-missions', 'pio-missions--cols-' . $columns);
     $extra_class = sanitize_html_class($atts['class']);
     if ($extra_class !== '') {
         $classes[] = $extra_class;
     }
+    $grid_open = '<div class="' . esc_attr(implode(' ', $classes)) . '">';
 
-    $html = $admin_notice . '<div class="' . esc_attr(implode(' ', $classes)) . '">';
+    // Sorted by department, then team, unless group="0".
+    if ($atts['group'] === '0') {
+        $level = max(2, min(6, intval($atts['heading_level'])));
+        $html = $admin_notice . $grid_open;
+        foreach ($missions as $mission) {
+            $html .= pio_oremis_mission_card($mission, $level, $card_options);
+        }
+        return $html . '</div>';
+    }
+
+    $department_level = max(2, min(4, intval($atts['group_heading_level'])));
+    $html = $admin_notice . '<div class="pio-missions-groups">';
+
+    foreach (pio_oremis_missions_by_structure($missions) as $group) {
+        $html .= '<section class="pio-missions-group">';
+        $html .= '<h' . $department_level . ' class="pio-missions-group-title">' . esc_html($group['name']) . '</h' . $department_level . '>';
+
+        foreach ($group['teams'] as $team) {
+            if ($team['name'] !== '') {
+                $html .= '<h' . ($department_level + 1) . ' class="pio-missions-team-title">' . esc_html($team['name']) . '</h' . ($department_level + 1) . '>';
+            }
+            $mission_level = $department_level + ($team['name'] !== '' ? 2 : 1);
+            $html .= $grid_open;
+            foreach ($team['missions'] as $mission) {
+                $html .= pio_oremis_mission_card($mission, $mission_level, $card_options);
+            }
+            $html .= '</div>';
+        }
+
+        $html .= '</section>';
+    }
+
+    return $html . '</div>';
+}
+
+/**
+ * The missions by department, then team, as PIO sorts them: departments by
+ * name, the missions without one last ("Autres missions"); inside a
+ * department, the missions aimed at it first, then each team by name.
+ *
+ * @return array<int, array{name: string, teams: array<int, array{name: string, missions: array}>}>
+ */
+function pio_oremis_missions_by_structure($missions)
+{
+    $groups = array();
 
     foreach ($missions as $mission) {
         if (!is_array($mission) || empty($mission['title'])) {
             continue;
         }
-
-        $title = sanitize_text_field($mission['title']);
-        $more_url = $detail_page !== '' && !empty($mission['id'])
-            ? add_query_arg('mission', intval($mission['id']), $detail_page)
-            : (isset($mission['apply_url']) ? $mission['apply_url'] : '');
-
-        $html .= '<article class="pio-mission">';
-        if ($show_image) {
-            $html .= pio_oremis_mission_image($mission);
-        }
-        $html .= '<div class="pio-mission-body">';
-        $html .= '<' . $heading . ' class="pio-mission-title">' . esc_html($title) . '</' . $heading . '>';
-        $html .= pio_oremis_mission_details($mission);
-        if (!empty($mission['summary'])) {
-            $html .= '<p class="pio-mission-summary">' . esc_html(sanitize_text_field($mission['summary'])) . '</p>';
-        }
-        if ($more_url !== '') {
-            $html .= '<p class="pio-mission-actions"><a class="pio-mission-link" href="' . esc_url($more_url) . '">'
-                . ($detail_page !== '' ? 'Découvrir la mission' : 'Découvrir et postuler')
-                . '<span class="screen-reader-text"> : ' . esc_html($title) . '</span></a></p>';
-        }
-        $html .= '</div></article>';
+        $department = isset($mission['department']['name']) ? sanitize_text_field($mission['department']['name']) : '';
+        $team = isset($mission['team']['name']) ? sanitize_text_field($mission['team']['name']) : '';
+        $groups[$department][$team][] = $mission;
     }
 
-    return $html . '</div>';
+    uksort($groups, function ($a, $b) {
+        if ($a === '' || $b === '') {
+            return $a === '' ? ($b === '' ? 0 : 1) : -1;
+        }
+        return strcasecmp(remove_accents($a), remove_accents($b));
+    });
+
+    $sorted = array();
+    foreach ($groups as $department => $teams) {
+        uksort($teams, function ($a, $b) {
+            if ($a === '' || $b === '') {
+                return $a === '' ? ($b === '' ? 0 : -1) : 1;
+            }
+            return strcasecmp(remove_accents($a), remove_accents($b));
+        });
+
+        $team_list = array();
+        foreach ($teams as $team => $team_missions) {
+            $team_list[] = array('name' => (string) $team, 'missions' => $team_missions);
+        }
+        $sorted[] = array('name' => $department !== '' ? (string) $department : 'Autres missions', 'teams' => $team_list);
+    }
+
+    return $sorted;
 }
+
+/**
+ * One mission card: image, title, format and commitment, summary, link.
+ */
+function pio_oremis_mission_card($mission, $heading_level, $options)
+{
+    if (!is_array($mission) || empty($mission['title'])) {
+        return '';
+    }
+
+    $heading = 'h' . max(2, min(6, intval($heading_level)));
+    $title = sanitize_text_field($mission['title']);
+    $detail_page = $options['detail_page'];
+    $more_url = $detail_page !== '' && !empty($mission['id'])
+        ? add_query_arg('mission', intval($mission['id']), $detail_page)
+        : (isset($mission['apply_url']) ? $mission['apply_url'] : '');
+
+    $html = '<article class="pio-mission">';
+    if ($options['show_image']) {
+        $html .= pio_oremis_mission_image($mission);
+    }
+    $html .= '<div class="pio-mission-body">';
+    $html .= '<' . $heading . ' class="pio-mission-title">' . esc_html($title) . '</' . $heading . '>';
+    $html .= pio_oremis_mission_details($mission);
+    if (!empty($mission['summary'])) {
+        $html .= '<p class="pio-mission-summary">' . esc_html(sanitize_text_field($mission['summary'])) . '</p>';
+    }
+    if ($more_url !== '') {
+        $html .= '<p class="pio-mission-actions"><a class="pio-mission-link" href="' . esc_url($more_url) . '">'
+            . ($detail_page !== '' ? 'Découvrir la mission' : 'Découvrir et postuler')
+            . '<span class="screen-reader-text"> : ' . esc_html($title) . '</span></a></p>';
+    }
+
+    return $html . '</div></article>';
+}
+
 add_shortcode('pio_missions', 'pio_oremis_shortcode_missions');
 
 /**
