@@ -280,3 +280,141 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* Volunteer missions: [pio_missions] and [pio_mission] */
+.pio-missions {
+  display: grid;
+  gap: 1.25rem;
+  align-items: stretch;
+  margin-bottom: 2rem;
+}
+
+.pio-missions--cols-1 {
+  grid-template-columns: 1fr;
+}
+
+.pio-missions--cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pio-missions--cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pio-missions--cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pio-mission {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--pio-card);
+  border: 1px solid var(--pio-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.pio-mission:hover {
+  transform: translateY(-2px);
+  border-color: #d7d1c9;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
+}
+
+.pio-mission-image img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+}
+
+.pio-mission-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+.pio-mission-title {
+  margin: 0;
+  color: var(--pio-text);
+}
+
+.pio-mission-details {
+  margin: 0;
+  color: var(--pio-muted);
+  font-size: 0.9em;
+}
+
+.pio-mission-summary {
+  margin: 0;
+  color: var(--pio-text);
+}
+
+.pio-mission-actions {
+  margin: auto 0 0;
+  padding-top: 0.5rem;
+}
+
+.pio-mission-link {
+  color: var(--pio-accent);
+  font-weight: 600;
+}
+
+.pio-mission-link:focus-visible,
+.pio-mission-apply:focus-visible {
+  outline: 3px solid var(--pio-accent);
+  outline-offset: 2px;
+}
+
+.pio-mission-full .pio-mission-image img {
+  border-radius: 16px;
+  margin-bottom: 1rem;
+}
+
+.pio-mission-lead {
+  font-size: 1.1em;
+}
+
+.pio-mission-steps li {
+  margin-bottom: 0.35rem;
+}
+
+.pio-mission-step-type,
+.pio-mission-step-about {
+  color: var(--pio-muted);
+}
+
+.pio-missions-empty {
+  color: var(--pio-muted);
+}
+
+@media (max-width: 960px) {
+  .pio-missions--cols-3,
+  .pio-missions--cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .pio-missions--cols-2,
+  .pio-missions--cols-3,
+  .pio-missions--cols-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pio-mission {
+    transition: none;
+  }
+
+  .pio-mission:hover {
+    transform: none;
+  }
+}

@@ -7,6 +7,7 @@ Elle relie le site aux outils de l'association : l'annuaire des bénévoles, le 
 ## Fonctionnalités
 
 - **Équipes de l'association** : les membres d'une équipe, avec leur rôle et leur photo, toujours à jour depuis l'annuaire des bénévoles.
+- **Missions bénévoles** : les missions ouvertes dans PIO, chacune avec son image, son résumé et un lien pour postuler, et une page détaillée par mission.
 - **Gouvernance** : les procès-verbaux du conseil d'administration et de l'assemblée générale, et les prochaines séances avec leur ordre du jour, à télécharger.
 - **Connexion des bénévoles** : avec leur compte OREMIS ou leur compte Google `@oremis.fr`.
 - **Chat d'écoute OREMIS** : la bulle de discussion avec un bénévole, sur toutes les pages ou seulement certaines.
@@ -45,6 +46,30 @@ Les contenus s'ajoutent dans une page avec des codes courts (shortcodes).
 | `class` | Classe CSS supplémentaire. |
 
 La liste est mise en cache. Si l'annuaire est momentanément injoignable, les derniers membres connus restent affichés.
+
+### Missions bénévoles
+
+```
+[pio_missions limit="6" columns="3" format="remote"]
+[pio_mission id="12"]
+```
+
+`[pio_missions]` affiche les missions ouvertes, une carte par mission.
+
+| Option | Rôle |
+| --- | --- |
+| `limit` | Nombre maximum de missions, de 1 à 100 (12 par défaut). |
+| `columns` | Nombre de colonnes, de 1 à 4 (3 par défaut). |
+| `format` | `remote` (à distance), `on_site` (sur place) ou `hybrid`. |
+| `search` | Seulement les missions dont le titre ou le résumé contient ce texte. |
+| `show_image` | `0` pour masquer les images. |
+| `heading_level` | Niveau de titre de chaque mission, de 2 à 6 (3 par défaut). |
+| `detail_page` | Adresse d'une page du site qui contient `[pio_mission]` : chaque carte y mène au lieu d'aller directement vers PIO. |
+| `class` | Classe CSS supplémentaire. |
+
+`[pio_mission]` affiche une mission en entier : ses textes, les étapes du parcours et le bouton « Postuler à cette mission ». Avec `id`, toujours la même mission ; sans `id`, celle choisie depuis une carte de `[pio_missions detail_page="..."]`. Une mission fermée ou en brouillon n'est pas affichée. Option `heading_level` : niveau du titre de la mission, de 2 à 5 (2 par défaut).
+
+Le jeton de l'API (**OREMIS > Config PIO**) doit avoir dans DATA le droit `pio.missions:index` pour la liste, et `pio.missions:view` pour une mission. Les missions sont mises en cache ; si PIO est momentanément injoignable, les dernières missions connues restent affichées.
 
 ### Procès-verbaux et séances à venir
 
