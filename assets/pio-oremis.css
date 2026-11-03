@@ -282,6 +282,27 @@
 }
 
 /* Volunteer missions: [pio_missions] and [pio_mission] */
+.pio-missions-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.pio-missions-group-title {
+  margin: 0 0 1rem;
+  color: var(--pio-text);
+}
+
+.pio-missions-team-title {
+  margin: 0 0 0.75rem;
+  color: var(--pio-muted);
+}
+
+.pio-missions-group .pio-missions {
+  margin-bottom: 1.5rem;
+}
+
 .pio-missions {
   display: grid;
   gap: 1.25rem;

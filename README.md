@@ -54,16 +54,20 @@ La liste est mise en cache. Si l'annuaire est momentanément injoignable, les de
 [pio_mission id="12"]
 ```
 
-`[pio_missions]` affiche les missions ouvertes, une carte par mission.
+`[pio_missions]` affiche les missions ouvertes, une carte par mission, rangées par département puis par équipe (avec un titre pour chacun) ; les missions sans département viennent à la fin, sous « Autres missions ».
 
 | Option | Rôle |
 | --- | --- |
-| `limit` | Nombre maximum de missions, de 1 à 100 (12 par défaut). |
+| `group` | `0` pour une seule grille, sans titres de département ni d'équipe. |
+| `group_heading_level` | Niveau de titre des départements, de 2 à 4 (2 par défaut) ; les équipes et les missions prennent les niveaux suivants. |
+| `department` | Code d'un département (par exemple `COM`) : seulement ses missions. |
+| `team` | Code d'une équipe : seulement ses missions. |
+| `limit` | Nombre maximum de missions, de 1 à 100 (100 par défaut). |
 | `columns` | Nombre de colonnes, de 1 à 4 (3 par défaut). |
 | `format` | `remote` (à distance), `on_site` (sur place) ou `hybrid`. |
 | `search` | Seulement les missions dont le titre ou le résumé contient ce texte. |
 | `show_image` | `0` pour masquer les images. |
-| `heading_level` | Niveau de titre de chaque mission, de 2 à 6 (3 par défaut). |
+| `heading_level` | Avec `group="0"` : niveau de titre de chaque mission, de 2 à 6 (3 par défaut). |
 | `detail_page` | Adresse d'une page du site qui contient `[pio_mission]` : chaque carte y mène au lieu d'aller directement vers PIO. |
 | `class` | Classe CSS supplémentaire. |
 
